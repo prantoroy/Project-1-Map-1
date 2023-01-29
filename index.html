@@ -1,0 +1,91 @@
+<html>
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+   integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+   crossorigin=""/>
+
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+   integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+   crossorigin=""></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.control.layers.legend"></script>
+</head>
+<body>
+  <div id="map"></div> 
+  <style>
+    html, body {
+      height: 100%;
+    }
+    #map {
+      height: 100%;
+    }  
+  </style>
+  <script>
+    var map = L.map('map').setView([38.5, -92.5],6);
+
+    var basemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20
+    }).addTo(map);
+
+    $.getJSON('https://raw.githubusercontent.com/prantoroy/dump/main/population.geojson', function(data) {
+      var coordinatesOnly = data.features.map(function(feature) {
+        return [feature.geometry.coordinates[1], feature.geometry.coordinates[0], 1];
+      });
+  
+    var heat = L.heatLayer(coordinatesOnly, {
+      max: 5,
+      minOpacity: 0.23
+    }).addTo(map);
+      
+      
+      var moroads = new L.GeoJSON().addTo(map);
+     $.getJSON("https://raw.githubusercontent.com/prantoroy/dump/main/missouriroads.json", function(data) {
+      moroads.addData(data);
+      moroads.setStyle({ color: "red", weight: 2, dashArray: "5,5" });
+    });
+
+
+      var airqualpoly = new L.GeoJSON().addTo(map);
+     $.getJSON("https://raw.githubusercontent.com/prantoroy/dump/main/MO_2018_Air_Quality_Standards_Nonattainment_Areas.geojson", function(data) {
+      airqualpoly.addData(data);
+      airqualpoly.setStyle({ color: "white", weight: 2, fillOpacity: 0 });
+    });
+
+      
+      var moedu = new L.GeoJSON(null, {
+          pointToLayer: function (feature, latlng) {
+              return new L.circleMarker(latlng, {
+                  radius: 4,
+                  fillColor: "#fff",
+                  color: "purple",
+                  weight: 2,
+                  opacity: 1,
+                  fillOpacity: 1,
+                  dashArray:"5,5"
+              });
+          }
+      }).addTo(map);
+
+      $.getJSON("https://raw.githubusercontent.com/prantoroy/dump/main/edumissouri.json", function(data) {
+          moedu.addData(data);
+          moedu.eachLayer(function (layer) {
+              var popupContent = layer.feature.properties.NAME;
+              layer.bindPopup(popupContent);
+          });
+      });
+      var overlays = {
+  "Educational institution": moedu,
+  "Major Roads": moroads,
+        "Critical Air Quality": airqualpoly
+};
+
+L.control.layers(null, overlays).addTo(map);
+    });
+    
+
+  </script>
+</body>
+</html>
